@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum BlueprintStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum BlueprintSource {
+  CURATED
+  AI
+  CUSTOMIZED
+}
+
+enum UserProjectStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum ProjectVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum CommunityBlueprintStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  NEEDS_CHANGES
+}
+
+model User {
+  id              String           @id @default(cuid())
+  name            String?
+  email           String?          @unique
+  emailVerified   DateTime?
+  image           String?
+  role            Role             @default(USER)
+  accounts        Account[]
+  sessions        Session[]
+  savedBlueprints SavedBlueprint[]
+  projects        UserProject[]
+  communityBlueprints CommunityBlueprint[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Blueprint {
+  id                String              @id @default(cuid())
+  slug              String              @unique
+  title             String
+  shortDescription  String
+  longDescription   String
+  developerFields   Json
+  categories        Json
+  goals             Json
+  stacks            Json
+  difficulty        String
+  estimatedTime     String
+  features          Json
+  recommendedStack  Json
+  portfolioValue    Int
+  learningValue     Int
+  buildability      Int
+  uniqueness        Int
+  marketPotential   Int
+  richContent       Json
+  source            BlueprintSource     @default(CURATED)
+  status            BlueprintStatus     @default(DRAFT)
+  featured          Boolean             @default(false)
+  generated         Boolean             @default(false)
+  customized        Boolean             @default(false)
+  baseBlueprintId   String?
+  createdById       String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  revisions         BlueprintRevision[]
+  savedBlueprints   SavedBlueprint[]
+  userProjects      UserProject[]
+
+  @@index([status])
+  @@index([featured])
+  @@index([source])
+}
+
+model BlueprintRevision {
+  id          String    @id @default(cuid())
+  blueprintId String
+  blueprint   Blueprint @relation(fields: [blueprintId], references: [id], onDelete: Cascade)
+  snapshot    Json
+  createdById String?
+  createdAt   DateTime  @default(now())
+  note        String?
+}
+
+model SavedBlueprint {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blueprintId String?
+  blueprint   Blueprint? @relation(fields: [blueprintId], references: [id], onDelete: Cascade)
+  communityBlueprintId String?
+  communityBlueprint   CommunityBlueprint? @relation(fields: [communityBlueprintId], references: [id], onDelete: Cascade)
+  snapshot    Json?
+  createdAt   DateTime   @default(now())
+
+  @@unique([userId, blueprintId])
+  @@index([userId])
+  @@index([communityBlueprintId])
+}
+
+model UserProject {
+  id             String              @id @default(cuid())
+  userId         String
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blueprintId    String?
+  blueprint      Blueprint?          @relation(fields: [blueprintId], references: [id], onDelete: SetNull)
+  communityBlueprintId String?
+  communityBlueprint   CommunityBlueprint? @relation(fields: [communityBlueprintId], references: [id], onDelete: SetNull)
+  title          String
+  description    String
+  status         UserProjectStatus   @default(NOT_STARTED)
+  visibility     ProjectVisibility   @default(PRIVATE)
+  stack          Json
+  sourceSnapshot Json?
+  selectedScope  String?
+  repositoryUrl  String?
+  liveUrl        String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  tasks          ProjectTask[]
+  notes          ProjectNote[]
+  resources      ProjectResource[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([blueprintId])
+  @@index([communityBlueprintId])
+}
+
+model CommunityBlueprint {
+  id                String                   @id @default(cuid())
+  authorId          String
+  author            User                     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title             String
+  slug              String
+  shortDescription  String
+  longDescription   String
+  developerFields   Json
+  categories        Json
+  goals             Json
+  stacks            Json
+  difficulty        String
+  estimatedTime     String
+  features          Json
+  recommendedStack  Json
+  portfolioValue    Int
+  learningValue     Int
+  buildability      Int
+  uniqueness        Int
+  marketPotential   Int
+  richContent       Json
+  status            CommunityBlueprintStatus @default(PENDING)
+  adminNote         String?
+  reviewedById      String?
+  reviewedAt        DateTime?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  savedBlueprints   SavedBlueprint[]
+  userProjects      UserProject[]
+
+  @@index([authorId])
+  @@index([status])
+  @@index([slug])
+}
+
+model ProjectTask {
+  id          String      @id @default(cuid())
+  projectId   String
+  project     UserProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phaseTitle  String?
+  title       String
+  description String?
+  order       Int         @default(0)
+  completed   Boolean     @default(false)
+  completedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([projectId])
+}
+
+model ProjectNote {
+  id        String      @id @default(cuid())
+  projectId String
+  project   UserProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([projectId])
+}
+
+model ProjectResource {
+  id        String      @id @default(cuid())
+  projectId String
+  project   UserProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  label     String
+  url       String
+  type      String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([projectId])
+}
