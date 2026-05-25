@@ -26,9 +26,11 @@ const scopeLabels = {
 export function StartProjectDialog({
   blueprint,
   compact = false,
+  iconOnly = false,
 }: {
   blueprint: ProjectIdea;
   compact?: boolean;
+  iconOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [pendingScope, setPendingScope] = useState("");
@@ -42,7 +44,7 @@ export function StartProjectDialog({
         className={cn(compact ? "h-10" : "h-11", buttonClasses.primary)}
       >
         <Rocket className="size-4" />
-        Start Project
+        {!iconOnly ? "Start Project" : null}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="border border-[#3F3F46] bg-[#09090B] text-zinc-100 sm:max-w-xl">

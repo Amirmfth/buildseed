@@ -149,7 +149,7 @@ export function TechStackStep({
           <h3 className="mb-3 font-mono text-xs uppercase tracking-[0.14em] text-green-300">
             Recommended first
           </h3>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-wrap gap-2 sm:grid sm:gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {recommendedOptions.map((option) => (
               <SelectableCard
                 key={option.id}
@@ -176,7 +176,7 @@ export function TechStackStep({
             <h3 className="mb-3 font-mono text-xs uppercase tracking-[0.14em] text-zinc-500">
               {category}
             </h3>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-wrap gap-2 sm:grid sm:gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {options.map((option) => (
                 <SelectableCard
                   key={option.id}

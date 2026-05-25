@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth";
 import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { MobileNavbarMenu } from "@/components/landing/MobileNavbarMenu";
+import { SignInModalTrigger } from "@/components/auth/SignInModalTrigger";
 import { authOptions } from "@/lib/auth";
 
 export async function Navbar() {
@@ -27,7 +29,10 @@ export async function Navbar() {
             className="size-9 rounded-xl"
             priority
           />
-          <span className="text-base font-semibold tracking-tight text-zinc-50">
+          <span className="hidden text-base font-semibold tracking-tight text-zinc-50 sm:inline">
+            BuildSeed
+          </span>
+          <span className="text-base font-semibold tracking-tight text-zinc-50 sm:hidden">
             BuildSeed
           </span>
         </Link>
@@ -74,48 +79,11 @@ export async function Navbar() {
               </div>
             </details>
           ) : (
-            <Link
-              href="/sign-in?callbackUrl=/"
-              className="rounded-xl border border-[#3F3F46] bg-[#18181B] px-3 py-2 font-medium text-zinc-100 transition hover:border-green-500/40 hover:bg-[#27272A]"
-            >
-              Sign in
-            </Link>
+            <SignInModalTrigger callbackUrl="/" />
           )}
         </div>
 
-        <div className="flex items-center gap-2 md:hidden">
-          {isSignedIn ? (
-            <details className="group relative">
-              <summary className="flex cursor-pointer list-none items-center gap-1 rounded-xl border border-[#3F3F46] bg-[#18181B] px-3 py-2 text-sm font-medium text-zinc-100 transition hover:bg-[#27272A] [&::-webkit-details-marker]:hidden">
-                Account
-                <ChevronDown className="size-3.5 transition group-open:rotate-180" />
-              </summary>
-              <div className="absolute right-0 mt-2 w-52 overflow-hidden rounded-2xl border border-[#3F3F46] bg-[#18181B] p-2 shadow-2xl shadow-black/30">
-                <AccountLink href="/projects">My Projects</AccountLink>
-                <AccountLink href="/saved">Saved</AccountLink>
-                <AccountLink href="/community/submit">Submit Blueprint</AccountLink>
-                <AccountLink href="/community/my-submissions">
-                  My Submissions
-                </AccountLink>
-                {isAdmin ? <AccountLink href="/admin">Admin</AccountLink> : null}
-                <AccountLink href="/api/auth/signout">Logout</AccountLink>
-              </div>
-            </details>
-          ) : (
-            <Link
-              href="/sign-in?callbackUrl=/"
-              className="rounded-xl border border-[#3F3F46] bg-[#18181B] px-3 py-2 text-sm font-medium text-zinc-100 transition hover:bg-[#27272A]"
-            >
-              Sign in
-            </Link>
-          )}
-          <Link
-            href="/projects"
-            className="rounded-xl border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm font-medium text-green-300 transition hover:bg-green-500/15"
-          >
-            Projects
-          </Link>
-        </div>
+        <MobileNavbarMenu isSignedIn={isSignedIn} isAdmin={isAdmin} />
       </nav>
     </header>
   );

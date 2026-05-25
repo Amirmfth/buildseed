@@ -6,6 +6,7 @@ import {
   createCustomTask,
   createNote,
   createResource,
+  deleteProject,
   deleteNote,
   deleteResource,
   deleteTask,
@@ -34,6 +35,7 @@ import {
   PendingTaskToggle,
   PendingTextButton,
 } from "@/components/workspace/ProjectFormControls";
+import { MobileProjectWorkspace } from "@/components/workspace/MobileProjectWorkspace";
 import { SourceBlueprintPanel } from "@/components/workspace/SourceBlueprintPanel";
 import { prisma } from "@/lib/prisma";
 import { calculateProgress } from "@/lib/projects/progress";
@@ -90,7 +92,7 @@ export default async function ProjectDetailPage({
   return (
     <main className="min-h-screen bg-[#09090B] text-zinc-50">
       <Navbar />
-      <section className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <section className="mx-auto w-full max-w-7xl px-4 py-8 pb-28 sm:px-6 lg:px-8">
         <Link
           href="/projects"
           className="text-sm text-zinc-400 hover:text-zinc-100"
@@ -98,7 +100,7 @@ export default async function ProjectDetailPage({
           Back to projects
         </Link>
 
-        <div className="mt-4 rounded-2xl border border-[#3F3F46]/70 bg-[#18181B] p-4">
+        <div id="overview" className="mt-4 hidden rounded-2xl border border-[#3F3F46]/70 bg-[#18181B] p-4 md:block">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
@@ -179,7 +181,7 @@ export default async function ProjectDetailPage({
           </div>
         </div>
 
-        <div className="mt-5 grid gap-5 lg:grid-cols-[390px_minmax(0,1fr)]">
+        <div className="mt-5 hidden gap-5 md:grid lg:grid-cols-[390px_minmax(0,1fr)]">
           <aside className="grid content-start gap-5">
             <Panel title="Build Plan" compact>
               <div className="grid gap-2">
@@ -213,6 +215,16 @@ export default async function ProjectDetailPage({
                 snapshot={project.sourceSnapshot}
                 selectedScope={project.selectedScope}
               />
+              <form action={deleteProject} className="mt-4">
+                <input type="hidden" name="projectId" value={project.id} />
+                <PendingSubmitButton
+                  className="w-full border-red-500/50 bg-red-500/10 text-red-200 hover:bg-red-500/20"
+                  variant="outline"
+                  pendingLabel="Deleting..."
+                >
+                  Delete project
+                </PendingSubmitButton>
+              </form>
             </Panel>
           </aside>
 
@@ -232,7 +244,7 @@ export default async function ProjectDetailPage({
                 </TabsList>
               </div>
 
-              <TabsContent value="notes" className="mt-0">
+              <TabsContent value="notes" className="mt-0" id="notes">
                 <div className="grid gap-4">
                   <div className="grid content-start gap-3">
                     {project.notes.length ? (
@@ -308,7 +320,7 @@ export default async function ProjectDetailPage({
                 </div>
               </TabsContent>
 
-              <TabsContent value="tasks" className="mt-0">
+              <TabsContent value="tasks" className="mt-0" id="tasks">
                 <div className="grid gap-4">
                   <div className="grid content-start gap-2">
                     {customTasks.length ? (
@@ -343,7 +355,7 @@ export default async function ProjectDetailPage({
                 </div>
               </TabsContent>
 
-              <TabsContent value="resources" className="mt-0">
+              <TabsContent value="resources" className="mt-0" id="resources">
                 <div className="grid gap-4">
                   <div className="grid content-start gap-2">
                     {project.resources.length ? (
@@ -415,8 +427,24 @@ export default async function ProjectDetailPage({
             </Tabs>
           </section>
         </div>
+        <MobileProjectWorkspace
+          projectId={project.id}
+          title={project.title}
+          description={project.description}
+          buildPlanTasks={buildPlanTasks}
+          customTasks={customTasks}
+          notes={project.notes}
+          resources={project.resources}
+          sourceSnapshot={project.sourceSnapshot}
+          selectedScope={project.selectedScope}
+          progress={progress}
+          completedBuildTasks={completedBuildTasks}
+          totalBuildTasks={buildPlanTasks.length}
+        />
       </section>
-      <Footer />
+      <div className="hidden md:block">
+        <Footer />
+      </div>
     </main>
   );
 }

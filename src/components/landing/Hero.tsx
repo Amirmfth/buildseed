@@ -35,12 +35,12 @@ export function Hero() {
             game development, security, and more with realistic project
             blueprints based on their stack, goals, and available time.
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-8 flex flex-row-reverse gap-3 sm:flex-row items-center justify-center sm:justify-start">
             <Button
               asChild
               className="h-12 rounded-xl bg-green-500 px-5 text-zinc-950 hover:bg-green-600"
             >
-              <a href="#project-match">
+              <a href="/project-match">
                 Start Project Match
                 <ArrowRight className="size-4" />
               </a>

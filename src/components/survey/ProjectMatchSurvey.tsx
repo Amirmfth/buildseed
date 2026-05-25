@@ -33,7 +33,13 @@ const initialAnswers: SurveyAnswers = {
   features: [],
 };
 
-export function ProjectMatchSurvey({ blueprints }: { blueprints: ProjectIdea[] }) {
+export function ProjectMatchSurvey({
+  blueprints,
+  mobileStandalone = false,
+}: {
+  blueprints: ProjectIdea[];
+  mobileStandalone?: boolean;
+}) {
   const [activeStep, setActiveStep] = useState(0);
   const [answers, setAnswers] = useState<SurveyAnswers>(initialAnswers);
   const [submitted, setSubmitted] = useState(false);
@@ -164,17 +170,35 @@ export function ProjectMatchSurvey({ blueprints }: { blueprints: ProjectIdea[] }
   return (
     <section
       id="project-match"
-      className="relative mx-auto w-full max-w-6xl px-4 py-14 sm:px-6 sm:py-18 lg:px-8"
+      className={cn(
+        "relative mx-auto w-full max-w-6xl px-4 py-14 sm:px-6 sm:py-18 lg:px-8",
+        mobileStandalone && "max-md:px-0 max-md:py-0"
+      )}
     >
-      <div className="absolute inset-x-4 top-8 -z-10 h-72 rounded-full bg-green-500/8 blur-3xl" />
+      <div
+        className={cn(
+          "absolute inset-x-4 top-8 -z-10 h-72 rounded-full bg-green-500/8 blur-3xl",
+          mobileStandalone && "max-md:hidden"
+        )}
+      />
       <motion.div
         initial={{ opacity: 0, y: 18 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.45 }}
-        className={cn("overflow-hidden rounded-2xl", surfaceClasses.panel)}
+        className={cn(
+          "overflow-hidden rounded-2xl",
+          surfaceClasses.panel,
+          mobileStandalone &&
+            "max-md:h-[calc(100dvh-4rem)] max-md:rounded-none max-md:border-x-0 max-md:flex max-md:flex-col"
+        )}
       >
-        <div className="border-b border-[#3F3F46]/55 bg-[#09090B]/35 p-4 sm:p-5">
+        <div
+          className={cn(
+            "border-b border-[#3F3F46]/55 bg-[#09090B]/35 p-4 sm:p-5",
+            mobileStandalone && "max-md:sticky max-md:top-0 max-md:z-10"
+          )}
+        >
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <div className="flex items-center gap-2 text-sm font-medium text-zinc-200">
@@ -199,7 +223,7 @@ export function ProjectMatchSurvey({ blueprints }: { blueprints: ProjectIdea[] }
             </div>
           </div>
 
-          <ol className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-7">
+          <ol className="mt-5 hidden sm:grid grid-cols-3 gap-2 sm:grid-cols-7 max-md:grid-cols-7">
             {surveySteps.map((item, index) => (
               <li key={item.key}>
                 <div
@@ -221,8 +245,20 @@ export function ProjectMatchSurvey({ blueprints }: { blueprints: ProjectIdea[] }
           </ol>
         </div>
 
-        <div className="p-4 sm:p-6 lg:p-8">
-          <div className="min-h-[430px]">
+        <div
+          className={cn(
+            "p-4 sm:p-6 lg:p-8",
+            mobileStandalone &&
+              "max-md:flex max-md:min-h-0 max-md:flex-1 max-md:flex-col max-md:overflow-hidden max-md:p-3"
+          )}
+        >
+          <div
+            className={cn(
+              "min-h-[430px]",
+              mobileStandalone &&
+                "max-md:min-h-0 max-md:flex-1 max-md:overflow-y-auto max-md:overscroll-contain max-md:pb-24"
+            )}
+          >
             <AnimatePresence mode="wait">
               {step.key === "developerFields" ? (
                 <DeveloperFieldStep
@@ -249,13 +285,21 @@ export function ProjectMatchSurvey({ blueprints }: { blueprints: ProjectIdea[] }
                   options={[...("options" in step ? step.options : [])]}
                   selectedValues={selectedValues}
                   multiple={"multiple" in step ? step.multiple : false}
+                  layout={getStepLayout(step.key)}
+                  mobileLabelMap={step.key === "features" ? featureMobileLabels : undefined}
                   onChange={toggleValue}
                 />
               )}
             </AnimatePresence>
           </div>
 
-          <div className="mt-8 flex flex-col-reverse gap-3 border-t border-[#3F3F46]/45 pt-5 sm:flex-row sm:justify-between">
+          <div
+            className={cn(
+              "mt-8 flex flex-col-reverse gap-3 border-t border-[#3F3F46]/45 pt-5 sm:flex-row sm:justify-between",
+              mobileStandalone &&
+                "max-md:sticky max-md:bottom-0 max-md:z-10 max-md:mt-0 max-md:pb-2 max-md:pt-3 max-md:flex-row max-md:items-center max-md:justify-between"
+            )}
+          >
             <Button
               type="button"
               variant="outline"
@@ -267,26 +311,23 @@ export function ProjectMatchSurvey({ blueprints }: { blueprints: ProjectIdea[] }
               Back
             </Button>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
-              {isSkippable ? (
+            <div className="flex flex-1 flex-row justify-end gap-2 sm:flex-row">
+              {isSkippable && activeStep !== surveySteps.length - 1 ? (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={skipStep}
-                  className={cn("h-11", buttonClasses.outline)}
+                  className={cn("h-11 max-md:px-3", buttonClasses.outline)}
                 >
-                  {activeStep === surveySteps.length - 1
-                    ? "Skip and show matches"
-                    : "Skip"}
+                  Skip
                 </Button>
               ) : null}
 
               {activeStep === surveySteps.length - 1 ? (
                 <Button
                   type="button"
-                  disabled={!canContinue}
                   onClick={() => setSubmitted(true)}
-                  className={cn("h-11 px-5", buttonClasses.primary)}
+                  className={cn("h-11 px-4 max-md:text-sm", buttonClasses.primary)}
                 >
                   <Sparkles className="size-4" />
                   Show Matches
@@ -300,7 +341,7 @@ export function ProjectMatchSurvey({ blueprints }: { blueprints: ProjectIdea[] }
                       Math.min(surveySteps.length - 1, value + 1)
                     )
                   }
-                  className={cn("h-11 px-5", buttonClasses.primary)}
+                  className={cn("h-11 px-4 max-md:text-sm", buttonClasses.primary)}
                 >
                   Next
                   <ArrowRight className="size-4" />
@@ -313,6 +354,30 @@ export function ProjectMatchSurvey({ blueprints }: { blueprints: ProjectIdea[] }
     </section>
   );
 }
+
+function getStepLayout(key: SurveyStepKey): "wrap" | "full" {
+  if (key === "skillLevel" || key === "goal" || key === "availableTime") {
+    return "full";
+  }
+  return "wrap";
+}
+
+const featureMobileLabels: Record<string, string> = {
+  Authentication: "Auth",
+  "Database modeling": "DB modeling",
+  "Admin panel": "Admin",
+  "File uploads": "Uploads",
+  Payments: "Payments",
+  "AI integration": "AI",
+  "Realtime features": "Realtime",
+  "Email notifications": "Email",
+  Charts: "Charts",
+  "Search/filtering": "Search",
+  "Role-based access": "RBAC",
+  "API integrations": "API integ.",
+  Testing: "Testing",
+  Deployment: "Deploy",
+};
 
 function toggleFromArray<T>(items: T[], value: T) {
   return items.includes(value)

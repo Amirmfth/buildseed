@@ -17,11 +17,13 @@ export function SaveBlueprintButton({
   savedId,
   initialSaved = false,
   compact = false,
+  iconOnly = false,
 }: {
   blueprint: ProjectIdea;
   savedId?: string;
   initialSaved?: boolean;
   compact?: boolean;
+  iconOnly?: boolean;
 }) {
   const [saved, setSaved] = useState(initialSaved);
   const [pending, startTransition] = useTransition();
@@ -31,6 +33,7 @@ export function SaveBlueprintButton({
       type="button"
       variant="outline"
       disabled={pending}
+      aria-label={saved ? "Unsave blueprint" : "Save blueprint"}
       onClick={() => {
         startTransition(async () => {
           if (saved) {
@@ -62,7 +65,7 @@ export function SaveBlueprintButton({
       className={cn(compact ? "h-10" : "h-11", buttonClasses.outline)}
     >
       {saved ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}
-      {pending ? "Saving..." : saved ? "Saved" : "Save"}
+      {!iconOnly ? (pending ? "Saving..." : saved ? "Saved" : "Save") : null}
     </Button>
   );
 }

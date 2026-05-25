@@ -35,9 +35,9 @@ export function DeveloperFieldStep({
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="flex flex-wrap gap-2 sm:grid sm:gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {developerFields.map((field) => (
-          <div key={field.id} className="rounded-2xl" title={field.description}>
+          <div key={field.id} className="rounded-2xl max-sm:flex-1 max-sm:min-w-[9.5rem]" title={field.description}>
             <SelectableCard
               label={field.label}
               selected={selectedValues.includes(field.id)}

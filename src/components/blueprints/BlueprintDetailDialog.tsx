@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Check,
@@ -13,6 +13,7 @@ import {
   ShieldAlert,
   Sparkles,
   Trophy,
+  X,
 } from "lucide-react";
 
 import { BlueprintArchitectureTab } from "@/components/blueprints/BlueprintArchitectureTab";
@@ -63,18 +64,146 @@ export function BlueprintDetailDialog({
 }: BlueprintDetailDialogProps) {
   const [activeTab, setActiveTab] = useState<TabValue>("overview");
   const [copied, setCopied] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isClosingMobile, setIsClosingMobile] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobile(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  const mobileVisible = open || isClosingMobile;
+
+  useEffect(() => {
+    if (!isMobile) return;
+    if (mobileVisible) {
+      document.body.style.overflow = "hidden";
+      return;
+    }
+    document.body.style.overflow = "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobile, mobileVisible]);
 
   if (!idea) return null;
+  const activeIdea = idea;
 
   async function copyBlueprint() {
-    if (!idea) return;
     try {
-      await navigator.clipboard.writeText(generateBlueprint(idea));
+      await navigator.clipboard.writeText(generateBlueprint(activeIdea));
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
     } catch {
       setCopied(false);
     }
+  }
+
+  if (isMobile) {
+    const handleClose = () => {
+      setIsClosingMobile(true);
+      window.setTimeout(() => {
+        onOpenChange(false);
+        setIsClosingMobile(false);
+      }, 220);
+    };
+
+    return (
+      <AnimatePresence>
+        {mobileVisible ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: isClosingMobile ? 0 : 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/60"
+            onClick={handleClose}
+          >
+            <motion.div
+              initial={{ y: 120, opacity: 0.8 }}
+              animate={isClosingMobile ? { y: 120, opacity: 0.6 } : { y: 0, opacity: 1 }}
+              exit={{ y: 120, opacity: 0.6 }}
+              transition={{ duration: 0.24 }}
+              className="absolute inset-x-0 bottom-0 mx-auto flex h-[95vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-[#3F3F46] bg-[#09090B]"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="sticky top-0 z-20 border-b border-[#3F3F46] bg-[#09090B]/95 px-4 py-3 backdrop-blur">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="scrollbar-hidden flex max-w-[85%] items-center gap-1 overflow-x-auto rounded-full border border-[#3F3F46] bg-[#18181B] p-1">
+                    {tabs.map((tab) => (
+                      <button
+                        key={tab.value}
+                        type="button"
+                        onClick={() => setActiveTab(tab.value)}
+                        className={cn(
+                          "rounded-full p-2 text-zinc-300 transition",
+                          activeTab === tab.value && "bg-green-500 text-[#09090B]"
+                        )}
+                        aria-label={tab.label}
+                      >
+                        <tab.icon className="size-4" />
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    className="rounded-xl border border-[#3F3F46] bg-[#18181B] p-2 text-zinc-300"
+                    aria-label="Close blueprint"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+                <h2 className="mt-3 line-clamp-2 text-lg font-semibold text-zinc-50">
+                  {activeIdea.title}
+                </h2>
+                <p className="mt-1 text-sm text-zinc-500">
+                  {tabs.find((tab) => tab.value === activeTab)?.label}
+                </p>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                <RenderTab idea={activeIdea} activeTab={activeTab} />
+              </div>
+
+              <div className="sticky bottom-0 z-20 border-t border-[#3F3F46] bg-[#09090B]/95 p-3 backdrop-blur">
+                <div className="grid grid-cols-2 gap-2">
+                  <SaveBlueprintButton blueprint={activeIdea} compact />
+                  <StartProjectDialog blueprint={activeIdea} compact />
+                  {onCustomizeBlueprint ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => onCustomizeBlueprint(activeIdea)}
+                      className={cn("h-10", buttonClasses.outline)}
+                    >
+                      <Sparkles className="size-4" />
+                      AI
+                    </Button>
+                  ) : (
+                    <div />
+                  )}
+                  <Button
+                    type="button"
+                    onClick={copyBlueprint}
+                    className={cn("h-10", buttonClasses.primary)}
+                  >
+                    {copied ? (
+                      <Check className="size-4" />
+                    ) : (
+                      <Clipboard className="size-4" />
+                    )}
+                    {copied ? "Copied" : "Copy"}
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    );
   }
 
   return (
@@ -86,27 +215,27 @@ export function BlueprintDetailDialog({
             <div>
               <DialogHeader>
                 <div className="mb-3 flex flex-wrap gap-2">
-                  {idea.customized ? (
+                  {activeIdea.customized ? (
                     <Badge tone="green">AI customized</Badge>
-                  ) : idea.generated ? (
+                  ) : activeIdea.generated ? (
                     <Badge tone="cyan">AI generated</Badge>
                   ) : (
                     <Badge tone="green">Curated blueprint</Badge>
                   )}
-                  {idea.developerFields.slice(0, 3).map((field) => (
+                  {activeIdea.developerFields.slice(0, 3).map((field) => (
                     <Badge key={field}>{field}</Badge>
                   ))}
                 </div>
                 <DialogTitle className="max-w-3xl text-2xl font-semibold tracking-tight sm:text-3xl">
-                  {idea.title}
+                  {activeIdea.title}
                 </DialogTitle>
                 <DialogDescription className="max-w-3xl text-sm leading-6 text-zinc-400">
-                  {idea.longDescription}
+                  {activeIdea.longDescription}
                 </DialogDescription>
               </DialogHeader>
 
               <div className="mt-5 flex flex-wrap gap-2">
-                {idea.recommendedStack.slice(0, 8).map((stack) => (
+                {activeIdea.recommendedStack.slice(0, 8).map((stack) => (
                   <span
                     key={stack}
                     className="rounded-full border border-[#3F3F46] bg-[#09090B] px-3 py-1 font-mono text-xs text-zinc-300"
@@ -117,13 +246,13 @@ export function BlueprintDetailDialog({
               </div>
 
               <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-                <SaveBlueprintButton blueprint={idea} compact />
-                <StartProjectDialog blueprint={idea} compact />
+                <SaveBlueprintButton blueprint={activeIdea} compact />
+                <StartProjectDialog blueprint={activeIdea} compact />
                 {onCustomizeBlueprint ? (
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => onCustomizeBlueprint(idea)}
+                    onClick={() => onCustomizeBlueprint(activeIdea)}
                     className={cn("h-10", buttonClasses.outline)}
                   >
                     <Sparkles className="size-4" />
@@ -135,7 +264,11 @@ export function BlueprintDetailDialog({
                   onClick={copyBlueprint}
                   className={cn("h-10", buttonClasses.primary)}
                 >
-                  {copied ? <Check className="size-4" /> : <Clipboard className="size-4" />}
+                  {copied ? (
+                    <Check className="size-4" />
+                  ) : (
+                    <Clipboard className="size-4" />
+                  )}
                   {copied ? "Copied" : "Copy/export"}
                 </Button>
               </div>
@@ -147,10 +280,10 @@ export function BlueprintDetailDialog({
                 Blueprint snapshot
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Snapshot label="Difficulty" value={idea.difficulty} />
-                <Snapshot label="Time" value={idea.estimatedTime} />
-                <Snapshot label="Portfolio" value={`${idea.portfolioValue}/10`} />
-                <Snapshot label="Learning" value={`${idea.learningValue}/10`} />
+                <Snapshot label="Difficulty" value={activeIdea.difficulty} />
+                <Snapshot label="Time" value={activeIdea.estimatedTime} />
+                <Snapshot label="Portfolio" value={`${activeIdea.portfolioValue}/10`} />
+                <Snapshot label="Learning" value={`${activeIdea.learningValue}/10`} />
               </div>
             </aside>
           </div>
@@ -177,26 +310,40 @@ export function BlueprintDetailDialog({
           </div>
 
           <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.18 }}
-              >
-                {activeTab === "overview" ? <BlueprintOverviewTab blueprint={idea} /> : null}
-                {activeTab === "build" ? <BlueprintBuildPlanTab blueprint={idea} /> : null}
-                {activeTab === "architecture" ? <BlueprintArchitectureTab blueprint={idea} /> : null}
-                {activeTab === "portfolio" ? <BlueprintPortfolioTab blueprint={idea} /> : null}
-                {activeTab === "expansion" ? <BlueprintExpansionTab blueprint={idea} /> : null}
-                {activeTab === "challenges" ? <BlueprintChallengesTab blueprint={idea} /> : null}
-              </motion.div>
-            </AnimatePresence>
+            <RenderTab idea={activeIdea} activeTab={activeTab} />
           </div>
         </Tabs>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function RenderTab({
+  idea,
+  activeTab,
+}: {
+  idea: ProjectIdea;
+  activeTab: TabValue;
+}) {
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={activeTab}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.18 }}
+      >
+        {activeTab === "overview" ? <BlueprintOverviewTab blueprint={idea} /> : null}
+        {activeTab === "build" ? <BlueprintBuildPlanTab blueprint={idea} /> : null}
+        {activeTab === "architecture" ? (
+          <BlueprintArchitectureTab blueprint={idea} />
+        ) : null}
+        {activeTab === "portfolio" ? <BlueprintPortfolioTab blueprint={idea} /> : null}
+        {activeTab === "expansion" ? <BlueprintExpansionTab blueprint={idea} /> : null}
+        {activeTab === "challenges" ? <BlueprintChallengesTab blueprint={idea} /> : null}
+      </motion.div>
+    </AnimatePresence>
   );
 }
 

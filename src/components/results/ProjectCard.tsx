@@ -9,11 +9,9 @@ import {
   Clipboard,
   Clock3,
   ExternalLink,
-  Layers3,
   GraduationCap,
   SignalHigh,
   Sparkles,
-  Target,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -42,6 +40,9 @@ export function ProjectCard({
   const [copied, setCopied] = useState(false);
   const { idea } = match;
   const matchType = idea.matchType ?? match.matchType;
+  const categories = idea.categories ?? [];
+  const recommendedStack = idea.recommendedStack ?? [];
+  const secondaryActionCount = onCustomizeBlueprint ? 3 : 2;
 
   async function copyBlueprint() {
     try {
@@ -60,35 +61,37 @@ export function ProjectCard({
       whileHover={{ y: -3 }}
       transition={{ duration: 0.18 }}
       className={cn(
-        "group relative flex h-full flex-col overflow-hidden rounded-2xl p-5",
+        "group relative flex h-full flex-col overflow-hidden rounded-2xl p-4 sm:p-5",
         surfaceClasses.panel
       )}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-green-400/55 to-transparent opacity-0 transition group-hover:opacity-100" />
 
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 space-y-3">
+      <div className="flex items-start justify-between gap-3 sm:gap-4">
+        <div className="min-w-0 space-y-2 sm:space-y-3">
           <div className="flex flex-wrap gap-2">
-            {matchType ? <MatchBadge matchType={matchType} customized={idea.customized} /> : null}
-            {idea.categories.slice(0, 2).map((category) => (
+            {matchType ? (
+              <MatchBadge matchType={matchType} customized={idea.customized} />
+            ) : null}
+            {categories.slice(0, 1).map((category) => (
               <Pill key={category} tone="cyan">
                 {category}
               </Pill>
             ))}
           </div>
           <div>
-            <h3 className="text-xl font-semibold tracking-tight text-zinc-50">
+            <h3 className="text-lg font-semibold tracking-tight text-zinc-50 sm:text-xl">
               {idea.title}
             </h3>
-            <p className="mt-2 line-clamp-3 text-sm leading-6 text-zinc-400">
+            <p className="mt-2 line-clamp-2 text-sm leading-6 text-zinc-400 sm:line-clamp-3">
               {idea.shortDescription}
             </p>
           </div>
         </div>
-        <div className="shrink-0 rounded-2xl border border-green-500/30 bg-[#09090B]/70 p-2 shadow-[0_0_28px_rgba(34,197,94,0.08)]">
-          <div className="grid size-16 place-items-center rounded-xl bg-green-500/10">
+        <div className="shrink-0 rounded-2xl border border-green-500/30 bg-[#09090B]/70 p-1.5 shadow-[0_0_28px_rgba(34,197,94,0.08)] sm:p-2">
+          <div className="grid size-14 place-items-center rounded-xl bg-green-500/10 sm:size-16">
             <div className="text-center">
-              <span className="block text-xl font-semibold tabular-nums text-green-400">
+              <span className="block text-lg font-semibold tabular-nums text-green-400 sm:text-xl">
                 {match.percentage}%
               </span>
               <span className="font-mono text-[9px] uppercase text-green-300/70">
@@ -99,53 +102,21 @@ export function ProjectCard({
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3">
-        <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wide text-zinc-500">
-          <Layers3 className="size-3.5 text-cyan-300" />
-          Recommended stack
+      <div className="mt-4 grid gap-3 sm:mt-5">
+        <div className="hidden items-center gap-2 font-mono text-[11px] uppercase tracking-wide text-zinc-500 sm:flex">
+          Stack
         </div>
         <div className="flex flex-wrap gap-2">
-          {idea.recommendedStack.slice(0, 6).map((stack) => (
-            <Pill key={stack}>{stack}</Pill>
+          {recommendedStack.slice(0, 4).map((stackItem) => (
+            <Pill key={stackItem}>{stackItem}</Pill>
           ))}
-          {idea.recommendedStack.length > 6 ? (
-            <Pill>+{idea.recommendedStack.length - 6} more</Pill>
+          {recommendedStack.length > 4 ? (
+            <Pill>+{recommendedStack.length - 4} more</Pill>
           ) : null}
         </div>
       </div>
 
-      <div
-        className={cn(
-          "mt-5 grid gap-2 rounded-2xl p-3 text-sm text-zinc-400",
-          surfaceClasses.inset
-        )}
-      >
-        {match.matchReasons.map((reason) => (
-          <div key={reason} className="flex gap-2">
-            <Check className="mt-0.5 size-4 shrink-0 text-green-400" />
-            <span>{reason}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-5 grid gap-2">
-        <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wide text-zinc-500">
-          <Target className="size-3.5 text-green-400" />
-          Core build focus
-        </div>
-        <div className="grid gap-2">
-          {idea.coreFeatures.slice(0, 2).map((feature) => (
-            <div
-              key={feature}
-              className="rounded-xl border border-[#3F3F46]/45 bg-[#09090B]/45 px-3 py-2 text-sm text-zinc-300"
-            >
-              {feature}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-5 grid grid-cols-2 gap-3 border-t border-[#3F3F46]/45 pt-5 text-sm">
+      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[#3F3F46]/45 pt-4 text-sm sm:mt-5 sm:pt-5">
         <Metric
           icon={<SignalHigh />}
           label="Difficulty"
@@ -156,32 +127,41 @@ export function ProjectCard({
           icon={<BarChart3 />}
           label="Portfolio"
           value={`${idea.portfolioValue}/10`}
+          mobileHidden
         />
         <Metric
           icon={<GraduationCap />}
           label="Learning"
           value={`${idea.learningValue}/10`}
+          mobileHidden
         />
       </div>
 
-      <div className="mt-auto grid gap-2 pt-5 sm:grid-cols-2">
+      <div className="mt-auto grid grid-cols-2 gap-2 pt-4 sm:gap-2.5 sm:pt-5">
         <Button
           type="button"
           onClick={onViewBlueprint}
-          className={cn("h-10 sm:col-span-2", buttonClasses.primary)}
+          className={cn("h-10", buttonClasses.primary)}
         >
           <ExternalLink className="size-4" />
           View blueprint
         </Button>
+        <StartProjectDialog blueprint={idea} compact />
+      </div>
+
+      <div
+        className="mt-2 grid gap-2 sm:gap-2.5"
+        style={{ gridTemplateColumns: `repeat(${secondaryActionCount}, minmax(0, 1fr))` }}
+      >
         {onCustomizeBlueprint ? (
           <Button
             type="button"
             variant="outline"
             onClick={onCustomizeBlueprint}
             className={cn("h-10", buttonClasses.outline)}
+            aria-label="Customize blueprint"
           >
             <Sparkles className="size-4" />
-            Customize
           </Button>
         ) : null}
         <SaveBlueprintButton
@@ -189,20 +169,16 @@ export function ProjectCard({
           savedId={savedId}
           initialSaved={initialSaved}
           compact
+          iconOnly
         />
-        <StartProjectDialog blueprint={idea} compact />
         <Button
           type="button"
           variant="outline"
           onClick={copyBlueprint}
           className={cn("h-10", buttonClasses.outline)}
+          aria-label={copied ? "Blueprint copied" : "Copy blueprint"}
         >
-          {copied ? (
-            <Check className="size-4" />
-          ) : (
-            <Clipboard className="size-4" />
-          )}
-          {copied ? "Copied blueprint" : "Copy blueprint"}
+          {copied ? <Check className="size-4" /> : <Clipboard className="size-4" />}
         </Button>
       </div>
     </motion.article>
@@ -268,18 +244,21 @@ function Metric({
   icon,
   label,
   value,
+  mobileHidden = false,
 }: {
   icon: ReactNode;
   label: string;
   value: string;
+  mobileHidden?: boolean;
 }) {
   return (
-    <div className={cn("rounded-xl p-3", surfaceClasses.inset)}>
-      <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase text-zinc-500">
+    <div className={cn("rounded-xl p-3", surfaceClasses.inset, mobileHidden && "hidden sm:block")}>
+      <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase text-zinc-500 sm:mb-1">
         <span className="[&_svg]:size-3">{icon}</span>
-        {label}
+        <span className="hidden sm:inline">{label}</span>
+        <span className="text-sm font-medium normal-case text-zinc-200 sm:hidden">{value}</span>
       </div>
-      <p className="mt-1 text-sm font-medium text-zinc-200">{value}</p>
+      <p className="hidden text-sm font-medium text-zinc-200 sm:block">{value}</p>
     </div>
   );
 }

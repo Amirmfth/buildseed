@@ -256,6 +256,15 @@ export async function archiveProject(formData: FormData) {
   revalidatePath("/projects");
 }
 
+export async function deleteProject(formData: FormData) {
+  const { userId, projectId } = await requireProjectOwner(formData);
+  await prisma.userProject.delete({
+    where: { id: projectId, userId },
+  });
+  revalidatePath("/projects");
+  redirect("/projects");
+}
+
 async function requireProjectOwner(formData: FormData) {
   const session = await requireUser();
   const projectId = String(formData.get("projectId") ?? "");

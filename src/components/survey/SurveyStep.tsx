@@ -11,6 +11,8 @@ type SurveyStepProps = {
   options: string[];
   selectedValues: string[];
   multiple?: boolean;
+  layout?: "wrap" | "full";
+  mobileLabelMap?: Record<string, string>;
   onChange: (value: string) => void;
 };
 
@@ -21,6 +23,8 @@ export function SurveyStep({
   options,
   selectedValues,
   multiple = false,
+  layout = "wrap",
+  mobileLabelMap,
   onChange,
 }: SurveyStepProps) {
   return (
@@ -48,14 +52,22 @@ export function SurveyStep({
         ) : null}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div
+        className={
+          layout === "full"
+            ? "grid gap-2"
+            : "flex flex-wrap gap-2 sm:grid sm:gap-3 sm:grid-cols-2 lg:grid-cols-3"
+        }
+      >
         {options.map((option) => (
           <SelectableCard
             key={option}
             label={option}
+            mobileLabel={mobileLabelMap?.[option]}
             selected={selectedValues.includes(option)}
             onToggle={() => onChange(option)}
             compact={!multiple}
+            fullWidth={layout === "full"}
           />
         ))}
       </div>

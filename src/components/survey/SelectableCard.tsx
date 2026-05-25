@@ -6,18 +6,22 @@ import { cn } from "@/lib/utils";
 
 type SelectableCardProps = {
   label: string;
+  mobileLabel?: string;
   selected: boolean;
   onToggle: () => void;
   compact?: boolean;
   disabled?: boolean;
+  fullWidth?: boolean;
 };
 
 export function SelectableCard({
   label,
+  mobileLabel,
   selected,
   onToggle,
   compact = false,
   disabled = false,
+  fullWidth = false,
 }: SelectableCardProps) {
   return (
     <button
@@ -33,15 +37,17 @@ export function SelectableCard({
         "disabled:cursor-not-allowed disabled:border-[#3F3F46]/40 disabled:bg-[#18181B]/45 disabled:text-zinc-600",
         selected &&
           "border-green-500 bg-green-500/10 text-white shadow-[0_0_0_1px_rgba(34,197,94,0.26),0_14px_34px_rgba(34,197,94,0.08)]",
-        compact ? "min-h-10 px-3 text-xs" : "sm:min-h-14"
+        compact ? "min-h-10 px-3 text-xs max-sm:min-h-9 max-sm:px-2.5" : "sm:min-h-14",
+        fullWidth ? "w-full rounded-xl" : ""
       )}
     >
-      <span className="font-mono text-[12px] leading-5 tracking-normal sm:text-sm">
-        {label}
+      <span className="font-mono text-[11px] leading-5 tracking-normal sm:text-sm">
+        <span className="sm:hidden">{mobileLabel ?? label}</span>
+        <span className="hidden sm:inline">{label}</span>
       </span>
       <span
         className={cn(
-          "ml-3 grid size-5 shrink-0 place-items-center rounded-full border border-zinc-700 text-transparent transition",
+          "ml-3 hidden size-5 shrink-0 place-items-center rounded-full border border-zinc-700 text-transparent transition sm:grid",
           "group-hover:border-green-500/70",
           selected && "border-green-500 bg-green-500 text-zinc-950",
           disabled && "border-zinc-800"

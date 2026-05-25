@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { KeyRound, Sparkles, Trash2 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { KeyRound, Sparkles, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +57,30 @@ export function CustomizeBlueprintDialog({
   const [providerInfo, setProviderInfo] = useState<ProviderInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+  const [isClosingMobile, setIsClosingMobile] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobile(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  const mobileVisible = open || isClosingMobile;
+
+  useEffect(() => {
+    if (!isMobile) return;
+    if (mobileVisible) {
+      document.body.style.overflow = "hidden";
+      return;
+    }
+    document.body.style.overflow = "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobile, mobileVisible]);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,7 +110,6 @@ export function CustomizeBlueprintDialog({
   const canSubmit = request.trim().length > 0 || selectedPresets.length > 0;
 
   async function customize() {
-    if (!blueprint) return;
     const customizationRequest = request.trim();
     if (!customizationRequest && selectedPresets.length === 0) {
       setError("Choose a preset or describe what you want to change first.");
@@ -129,7 +153,11 @@ export function CustomizeBlueprintDialog({
       setRequest("");
       setSelectedPresets([]);
       onCustomized(payload.blueprint);
-      onOpenChange(false);
+      if (isMobile) {
+        closeMobile();
+      } else {
+        onOpenChange(false);
+      }
     } catch (customizeError) {
       setError(
         customizeError instanceof Error
@@ -141,14 +169,190 @@ export function CustomizeBlueprintDialog({
     }
   }
 
+  function closeMobile() {
+    setIsClosingMobile(true);
+    window.setTimeout(() => {
+      onOpenChange(false);
+      setIsClosingMobile(false);
+    }, 220);
+  }
+
   function clearSavedKey() {
     localStorage.removeItem(USER_KEY_STORAGE);
     setUserApiKey("");
   }
 
+  const content = (
+    <>
+      <div className={cn("rounded-2xl p-4", surfaceClasses.panel)}>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-300">
+            Quick presets
+          </p>
+          {selectedPresets.length ? (
+            <button
+              type="button"
+              onClick={() => setSelectedPresets([])}
+              className="text-xs text-zinc-400 hover:text-zinc-100"
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
+        <div className="mb-5 flex flex-wrap gap-2">
+          {customizationPresets.map((preset) => {
+            const selected = selectedPresets.includes(preset.id);
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() =>
+                  setSelectedPresets((current) =>
+                    selected
+                      ? current.filter((id) => id !== preset.id)
+                      : [...current, preset.id]
+                  )
+                }
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-xs transition",
+                  selected
+                    ? "border-green-500/50 bg-green-500/15 text-green-200"
+                    : "border-[#3F3F46] bg-[#09090B] text-zinc-400 hover:text-zinc-100"
+                )}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-300">
+          Optional message
+        </p>
+        <textarea
+          value={request}
+          onChange={(event) => setRequest(event.target.value)}
+          placeholder="Example: Make this mobile-first, remove payments, use Supabase instead of Firebase, make it easier, and add offline support."
+          className="mt-3 min-h-36 w-full resize-none rounded-xl border border-[#3F3F46] bg-[#09090B] p-3 text-sm leading-6 text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-green-500/70"
+        />
+        <div className="mt-2 flex justify-between text-xs text-zinc-500">
+          <span>Free usage: {Math.min(used, FREE_LIMIT)}/{FREE_LIMIT}</span>
+          <span className={requestTooLong ? "text-red-300" : ""}>
+            {request.length}/1400
+          </span>
+        </div>
+        {providerInfo ? (
+          <p className="mt-2 font-mono text-xs text-zinc-500">
+            Powered by {providerInfo.label}
+            {providerInfo.model ? ` - ${providerInfo.model}` : ""}
+          </p>
+        ) : null}
+      </div>
+
+      {freeUsedUp ? (
+        <div className="rounded-xl border border-[#3F3F46]/70 bg-[#18181B] p-4 text-sm text-zinc-300">
+          Free demo generations used. Add your own API key to continue.
+        </div>
+      ) : null}
+
+      <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+        <label className="relative block">
+          <KeyRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+          <Input
+            type="password"
+            value={userApiKey}
+            onChange={(event) => setUserApiKey(event.target.value)}
+            placeholder="Optional user API key"
+            className="h-11 rounded-xl border-[#3F3F46] bg-[#09090B] pl-9 text-zinc-100 placeholder:text-zinc-600"
+          />
+        </label>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={clearSavedKey}
+          className={cn("h-11", buttonClasses.outline)}
+        >
+          <Trash2 className="size-4" />
+          Clear key
+        </Button>
+      </div>
+      <p className="text-xs leading-5 text-zinc-500">
+        Your key is stored locally in this browser and is only used for generation requests.
+      </p>
+
+      {error ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+          {error}
+        </div>
+      ) : null}
+
+      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => (isMobile ? closeMobile() : onOpenChange(false))}
+          className={cn("h-11", buttonClasses.outline)}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          disabled={loading || freeUsedUp || requestTooLong || !canSubmit}
+          onClick={customize}
+          className={cn("h-11", buttonClasses.primary)}
+        >
+          <Sparkles className="size-4" />
+          {loading ? "Customizing..." : "Customize Blueprint"}
+        </Button>
+      </div>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <AnimatePresence>
+        {mobileVisible ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: isClosingMobile ? 0 : 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-black/60"
+            onClick={closeMobile}
+          >
+            <motion.section
+              initial={{ y: 120, opacity: 0.8 }}
+              animate={
+                isClosingMobile ? { y: 120, opacity: 0.6 } : { y: 0, opacity: 1 }
+              }
+              exit={{ y: 120, opacity: 0.6 }}
+              transition={{ duration: 0.24 }}
+              onClick={(event) => event.stopPropagation()}
+              className="absolute inset-x-0 bottom-0 mx-auto flex h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-[#3F3F46] bg-[#09090B]"
+            >
+              <div className="flex items-center justify-between border-b border-[#3F3F46] px-4 py-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-zinc-100">Customize with AI</h2>
+                  <p className="text-xs text-zinc-500">{blueprint.title}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeMobile}
+                  className="rounded-xl border border-[#3F3F46] bg-[#18181B] p-2 text-zinc-300"
+                  aria-label="Close customization"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto p-4">{content}</div>
+            </motion.section>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto border border-[#3F3F46] bg-[#09090B] text-zinc-100 sm:max-w-2xl">
+      <DialogContent className="max-h-[95vh] overflow-y-auto border border-[#3F3F46] bg-[#09090B] text-zinc-100 sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold tracking-tight">
             Customize with AI
@@ -157,127 +361,7 @@ export function CustomizeBlueprintDialog({
             Adapt &quot;{blueprint.title}&quot; with one message. The original blueprint is not changed.
           </DialogDescription>
         </DialogHeader>
-
-        <div className={cn("rounded-2xl p-4", surfaceClasses.panel)}>
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-300">
-              Quick presets
-            </p>
-            {selectedPresets.length ? (
-              <button
-                type="button"
-                onClick={() => setSelectedPresets([])}
-                className="text-xs text-zinc-400 hover:text-zinc-100"
-              >
-                Clear
-              </button>
-            ) : null}
-          </div>
-          <div className="mb-5 flex flex-wrap gap-2">
-            {customizationPresets.map((preset) => {
-              const selected = selectedPresets.includes(preset.id);
-              return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() =>
-                    setSelectedPresets((current) =>
-                      selected
-                        ? current.filter((id) => id !== preset.id)
-                        : [...current, preset.id]
-                    )
-                  }
-                  className={cn(
-                    "rounded-full border px-3 py-1.5 text-xs transition",
-                    selected
-                      ? "border-green-500/50 bg-green-500/15 text-green-200"
-                      : "border-[#3F3F46] bg-[#09090B] text-zinc-400 hover:text-zinc-100"
-                  )}
-                >
-                  {preset.label}
-                </button>
-              );
-            })}
-          </div>
-          <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-300">
-            Optional message
-          </p>
-          <textarea
-            value={request}
-            onChange={(event) => setRequest(event.target.value)}
-            placeholder="Example: Make this mobile-first, remove payments, use Supabase instead of Firebase, make it easier, and add offline support."
-            className="mt-3 min-h-36 w-full resize-none rounded-xl border border-[#3F3F46] bg-[#09090B] p-3 text-sm leading-6 text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-green-500/70"
-          />
-          <div className="mt-2 flex justify-between text-xs text-zinc-500">
-            <span>Free usage: {Math.min(used, FREE_LIMIT)}/{FREE_LIMIT}</span>
-            <span className={requestTooLong ? "text-red-300" : ""}>
-              {request.length}/1400
-            </span>
-          </div>
-          {providerInfo ? (
-            <p className="mt-2 font-mono text-xs text-zinc-500">
-              Powered by {providerInfo.label}
-              {providerInfo.model ? ` - ${providerInfo.model}` : ""}
-            </p>
-          ) : null}
-        </div>
-
-        {freeUsedUp ? (
-          <div className="rounded-xl border border-[#3F3F46]/70 bg-[#18181B] p-4 text-sm text-zinc-300">
-            Free demo generations used. Add your own API key to continue.
-          </div>
-        ) : null}
-
-        <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-          <label className="relative block">
-            <KeyRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
-            <Input
-              type="password"
-              value={userApiKey}
-              onChange={(event) => setUserApiKey(event.target.value)}
-              placeholder="Optional user API key"
-              className="h-11 rounded-xl border-[#3F3F46] bg-[#09090B] pl-9 text-zinc-100 placeholder:text-zinc-600"
-            />
-          </label>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={clearSavedKey}
-            className={cn("h-11", buttonClasses.outline)}
-          >
-            <Trash2 className="size-4" />
-            Clear key
-          </Button>
-        </div>
-        <p className="text-xs leading-5 text-zinc-500">
-          Your key is stored locally in this browser and is only used for generation requests.
-        </p>
-
-        {error ? (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
-            {error}
-          </div>
-        ) : null}
-
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className={cn("h-11", buttonClasses.outline)}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            disabled={loading || freeUsedUp || requestTooLong || !canSubmit}
-            onClick={customize}
-            className={cn("h-11", buttonClasses.primary)}
-          >
-            <Sparkles className="size-4" />
-            {loading ? "Customizing..." : "Customize Blueprint"}
-          </Button>
-        </div>
+        {content}
       </DialogContent>
     </Dialog>
   );
